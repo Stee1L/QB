@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QB.Data;
@@ -33,7 +30,6 @@ namespace QB.Controllers
 
         // GET: api/auth/users
         [HttpGet("users")]
-        [Authorize(Roles = "Admin")] // Опционально, для ограничения доступа
         public async Task<ActionResult<IEnumerable<UserModel>>> GetUsers()
         {
             return await _context.Users.ToListAsync();
@@ -41,7 +37,6 @@ namespace QB.Controllers
 
         // GET: api/auth/users/{id}
         [HttpGet("users/{id}")]
-        [Authorize] // Опционально, для ограничения доступа
         public async Task<ActionResult<UserModel>> GetUser(string id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -61,8 +56,10 @@ namespace QB.Controllers
             var user = new UserModel
             {
                 UserName = model.Name, 
+                Name = model.Name,
                 Email = model.Email,
-                RegistrationDate = DateTime.Now,
+                Id = Guid.NewGuid(),
+                RegistrationDate = DateTime.UtcNow,
                 ExperiencePoints = 0
             };
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -84,19 +81,52 @@ namespace QB.Controllers
         public async Task<IActionResult> Login([FromBody] LoginViewModel model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+
+            // Находим пользователя по электронной почте
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "Invalid login attempt");
+                return BadRequest(ModelState);
+            }
+
+            // Используем имя пользователя для входа
+            var result = await _signInManager.PasswordSignInAsync(user.Name, model.Password, model.RememberMe, lockoutOnFailure: false);
 
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(model.Email);
                 var token = GenerateJwtToken(user);
                 return Ok(new { token });
             }
 
             ModelState.AddModelError(string.Empty, "Invalid login attempt");
-
             return BadRequest(ModelState);
         }
+        
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.UserName,
+                user.Name
+            });
+        }
+
 
         [HttpPost($"forgot password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordViewModel model)
@@ -149,7 +179,7 @@ namespace QB.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Name, user.UserName ?? throw new InvalidOperationException())
                 }),
                 Expires = DateTime.UtcNow.AddDays(7),
