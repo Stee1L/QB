@@ -18,11 +18,9 @@ public static class ProgramExtensions
     
     public static WebApplication InitializeMigrations(this WebApplication app)
     {
-        using (var scope = app.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            dbContext.Database.Migrate();
-        }
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        dbContext.Database.Migrate();
         return app;
     }
     
@@ -40,7 +38,7 @@ public static class ProgramExtensions
         app.UseAuthentication();
         app.UseAuthorization();
         //
-        app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+        app.MapControllers();
         return app;
     }
     
@@ -71,7 +69,7 @@ public static class ProgramExtensions
             }
         });
         
-        services.AddIdentity<UserModel, IdentityRole>()
+        services.AddIdentity<UserModel, UserIdentityRole>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
@@ -89,7 +87,7 @@ public static class ProgramExtensions
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = configuration["Jwt:Issuer"],
                 ValidAudience = configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? throw new ArgumentNullException(configuration["Jwt:Key"])))
             };
         });
 
