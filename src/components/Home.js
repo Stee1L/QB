@@ -17,6 +17,9 @@ function Home({ user, onLogout }) {
                             <li className="nav-item">
                                 <Link className="nav-link" to="/">Главная</Link>
                             </li>
+                            <li className="nav-item">
+                                <Link className="nav-link" to="/feedback">Обратная связь</Link>
+                            </li>
                         </ul>
                         {user && (
                             <div className="d-flex align-items-center">

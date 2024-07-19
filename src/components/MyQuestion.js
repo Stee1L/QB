@@ -1,11 +1,12 @@
 ﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function MyQuestions({ user, onLogout }) {
     const [questions, setQuestions] = useState([]);
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         async function fetchQuestions() {
@@ -54,6 +55,12 @@ function MyQuestions({ user, onLogout }) {
         setQuestions(updatedQuestions);
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        onLogout();
+        navigate('/');
+    };
+
     return (
         <div>
             <nav className="navbar navbar-expand-lg navbar-light bg-light">
@@ -64,11 +71,14 @@ function MyQuestions({ user, onLogout }) {
                             <li className="nav-item">
                                 <Link className="nav-link" to="/">Главная</Link>
                             </li>
+                            <li className="nav-item">
+                                <Link className="nav-link" to="/feedback">Обратная связь</Link>
+                            </li>
                         </ul>
                         {user && (
                             <div className="d-flex align-items-center">
                                 <span className="me-2">Привет, {user.name}!</span>
-                                <button className="btn btn-outline-danger" onClick={onLogout}>Выйти</button>
+                                <button className="btn btn-outline-danger" onClick={handleLogout}>Выйти</button>
                             </div>
                         )}
                     </div>

@@ -9,6 +9,7 @@ function RandomQuestion({ user, onLogout }) {
     const [error, setError] = useState(null);
     const [selectedOption, setSelectedOption] = useState('');
     const [stats, setStats] = useState(null);
+    const [hasVoted, setHasVoted] = useState(false);
     const navigate = useNavigate();
 
     const fetchQuestion = async () => {
@@ -24,9 +25,10 @@ function RandomQuestion({ user, onLogout }) {
             setLoading(false);
             setError(null);
             setStats(null); // Сбрасываем статистику при получении нового вопроса
+            setHasVoted(false); // Сбрасываем статус голосования
         } catch (err) {
             console.log(err);
-            setError('Ошибка загрузки вопроса');
+            setError('На данный момент нет доступных вопросов, но вы можете создать новый!');
             setLoading(false);
         }
     };
@@ -57,6 +59,7 @@ function RandomQuestion({ user, onLogout }) {
                 percentage: ((stat.votes / totalVotes) * 100).toFixed(2)
             }));
             setStats(statsWithPercentages);
+            setHasVoted(true); // Устанавливаем статус голосования в true
 
         } catch (err) {
             setError('Ошибка отправки ответа');
@@ -123,6 +126,7 @@ function RandomQuestion({ user, onLogout }) {
                                                                         value={option.answerId}
                                                                         checked={selectedOption === option.answerId}
                                                                         onChange={(e) => setSelectedOption(e.target.value)}
+                                                                        disabled={hasVoted} // Отключаем выбор после голосования
                                                                     />
                                                                     <label className="form-check-label" htmlFor={`option-${option.answerId}`}>
                                                                         {option.text}
@@ -134,7 +138,7 @@ function RandomQuestion({ user, onLogout }) {
                                                         )}
                                                     </div>
                                                     {error && <div className="text-danger mb-3">{error}</div>}
-                                                    <button type="submit" className="btn btn-primary">Отправить ответ</button>
+                                                    {!hasVoted && <button type="submit" className="btn btn-primary">Отправить ответ</button>}
                                                 </form>
                                                 <button onClick={fetchQuestion} className="btn btn-secondary mt-4">Получить новый вопрос</button>
                                             </>

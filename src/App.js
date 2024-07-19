@@ -8,6 +8,7 @@ import Home from './components/Home';
 import CreateQuestion from './components/CreateQuestion';
 import RandomQuestion from './components/RandomQuestion';
 import MyQuestion from "./components/MyQuestion";
+import Feedback from "./components/Feedback"; // Импортируем компонент Feedback
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -62,6 +63,10 @@ function App() {
             <Route
                 path="/my-question"
                 element={<MyQuestion user={user} onLogout={handleLogout} />}
+            />
+            <Route
+                path="/feedback"
+                element={<Feedback user={user} onLogout={handleLogout} />}
             />
           </Routes>
         </div>
